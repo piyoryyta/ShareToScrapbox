@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrapbox Quick Link</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4285f4">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #e3f2fd;
+        }
+        .info {
+            margin-top: 30px;
+            text-align: left;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Scrapbox Quick Link</h1>
+    <div class="status" id="status">
+        準備完了
+    </div>
+    
+    <div class="info">
+        <h2>使い方</h2>
+        <ol>
+            <li>このページをホーム画面に追加してください</li>
+            <li>任意のページで「共有」をタップ</li>
+            <li>「Scrapbox Quick Link」を選択</li>
+            <li>Scrapboxの新しいページが開きます</li>
+        </ol>
+        
+        <h3>ホーム画面への追加方法</h3>
+        <p><strong>Chrome (Android):</strong></p>
+        <ul>
+            <li>メニュー (⋮) → 「ホーム画面に追加」</li>
+        </ul>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('Service Worker registered', reg))
+                .catch(err => console.log('Service Worker registration failed', err));
+        }
+
+        // 共有データを受け取る
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const title = params.get('title');
+            const text = params.get('text');
+            const url = params.get('url');
+
+            if (title || text || url) {
+                // 共有データを受け取った場合
+                const pageTitle = title || text || 'Untitled';
+                const encodedTitle = encodeURIComponent(pageTitle);
+                const scrapboxUrl = `https://scrapbox.io/piyoryyta/${encodedTitle}?body=`;
+                
+                document.getElementById('status').textContent = `"${pageTitle}" をScrapboxに送信中...`;
+                
+                // Scrapboxにリダイレクト
+                window.location.href = scrapboxUrl;
+            }
+        });
+    </script>
+</body>
+</html>
