@@ -126,12 +126,15 @@ window.addEventListener('DOMContentLoaded', () => {
             if (url && getIncludeUrl()) {
                 if (isTwitterUrl(url)) {
                     // Twitterの場合：テキストとURLを両方含める
-                    bodyContent = encodeURIComponent(`${text || ''}\n${url}`);
+                    bodyContent =`${text || ''}\n${url}`;
                 } else {
                     // 通常の場合：URLのみ
-                    bodyContent = encodeURIComponent(url);
+                    bodyContent = url
                 }
             }
+
+            bodyContent = 'via Scrapbox Quick Share\n' + bodyContent;
+            bodyContent = encodeURIComponent(bodyContent);
 
             const scrapboxUrl = `https://scrapbox.io/${projectName}/${encodedTitle}?body=${bodyContent}`;
 
