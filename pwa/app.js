@@ -33,6 +33,11 @@ function saveIncludeUrl(includeUrl) {
     localStorage.setItem(INCLUDE_URL_KEY, includeUrl.toString());
 }
 
+// Twitter URLかどうかを判定
+function isTwitterUrl(url) {
+    return url && (url.includes('twitter.com') || url.includes('x.com'));
+}
+
 // Service Workerの登録
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js')
@@ -87,7 +92,13 @@ window.addEventListener('DOMContentLoaded', () => {
         // URLを含めるかどうかを判定
         let bodyContent = '';
         if (url && getIncludeUrl()) {
-            bodyContent = encodeURIComponent(url);
+            if (isTwitterUrl(url)) {
+                // Twitterの場合：テキストとURLを両方含める
+                bodyContent = encodeURIComponent(`${text || ''}\n${url}`);
+            } else {
+                // 通常の場合：URLのみ
+                bodyContent = encodeURIComponent(url);
+            }
         }
 
         const scrapboxUrl = `https://scrapbox.io/${projectName}/${encodedTitle}?body=${bodyContent}`;
