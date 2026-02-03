@@ -5,12 +5,23 @@ const DEFAULT_PROJECT_NAME = 'piyoryyta';
 
 // プロジェクト名を取得
 function getProjectName() {
-    return localStorage.getItem(PROJECT_NAME_KEY) || DEFAULT_PROJECT_NAME;
+    try {
+        return localStorage.getItem(PROJECT_NAME_KEY) || DEFAULT_PROJECT_NAME;
+    } catch (error) {
+        console.error('LocalStorage読み込みエラー:', error);
+        return DEFAULT_PROJECT_NAME;
+    }
 }
 
 // プロジェクト名を保存
 function saveProjectName(projectName) {
-    localStorage.setItem(PROJECT_NAME_KEY, projectName);
+    try {
+        localStorage.setItem(PROJECT_NAME_KEY, projectName);
+        return true;
+    } catch (error) {
+        console.error('LocalStorage保存エラー:', error);
+        return false;
+    }
 }
 
 // 現在のプロジェクト名を表示
@@ -24,13 +35,24 @@ function displayCurrentProject() {
 
 // URLを含めるかどうかを取得
 function getIncludeUrl() {
-    const stored = localStorage.getItem(INCLUDE_URL_KEY);
-    return stored === null ? true : stored === 'true';
+    try {
+        const stored = localStorage.getItem(INCLUDE_URL_KEY);
+        return stored === null ? true : stored === 'true';
+    } catch (error) {
+        console.error('LocalStorage読み込みエラー:', error);
+        return true;
+    }
 }
 
 // URLを含めるかどうかを保存
 function saveIncludeUrl(includeUrl) {
-    localStorage.setItem(INCLUDE_URL_KEY, includeUrl.toString());
+    try {
+        localStorage.setItem(INCLUDE_URL_KEY, includeUrl.toString());
+        return true;
+    } catch (error) {
+        console.error('LocalStorage保存エラー:', error);
+        return false;
+    }
 }
 
 // Twitter URLかどうかを判定
@@ -58,10 +80,14 @@ window.addEventListener('DOMContentLoaded', () => {
         saveButton.addEventListener('click', () => {
             const projectName = projectNameInput.value.trim();
             if (projectName) {
-                saveProjectName(projectName);
-                displayCurrentProject();
-                projectNameInput.value = '';
-                alert(`プロジェクト名を「${projectName}」に設定しました`);
+                const success = saveProjectName(projectName);
+                if (success) {
+                    displayCurrentProject();
+                    projectNameInput.value = '';
+                    alert(`プロジェクト名を「${projectName}」に設定しました`);
+                } else {
+                    alert('プロジェクト名の保存に失敗しました');
+                }
             } else {
                 alert('プロジェクト名を入力してください');
             }
@@ -78,34 +104,48 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     // 共有データの処理
-    const params = new URLSearchParams(window.location.search);
-    const title = params.get('title');
-    const text = params.get('text');
-    const url = params.get('url');
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const title = params.get('title');
+        const text = params.get('text');
+        const url = params.get('url');
 
-    if (title || text || url) {
-        // 共有データを受け取った場合
-        const pageTitle = title || text || 'Untitled';
-        const encodedTitle = encodeURIComponent(pageTitle);
-        const projectName = getProjectName();
+        if (title || text || url) {
+            // 共有データを受け取った場合
+            const pageTitle = title || text || 'Untitled';
+            const encodedTitle = encodeURIComponent(pageTitle);
+            const projectName = getProjectName();
 
-        // URLを含めるかどうかを判定
-        let bodyContent = '';
-        if (url && getIncludeUrl()) {
-            if (isTwitterUrl(url)) {
-                // Twitterの場合：テキストとURLを両方含める
-                bodyContent = encodeURIComponent(`${text || ''}\n${url}`);
-            } else {
-                // 通常の場合：URLのみ
-                bodyContent = encodeURIComponent(url);
+            // プロジェクト名の検証
+            if (!projectName || projectName.trim() === '') {
+                throw new Error('プロジェクト名が設定されていません');
             }
+
+            // URLを含めるかどうかを判定
+            let bodyContent = '';
+            if (url && getIncludeUrl()) {
+                if (isTwitterUrl(url)) {
+                    // Twitterの場合：テキストとURLを両方含める
+                    bodyContent = encodeURIComponent(`${text || ''}\n${url}`);
+                } else {
+                    // 通常の場合：URLのみ
+                    bodyContent = encodeURIComponent(url);
+                }
+            }
+
+            const scrapboxUrl = `https://scrapbox.io/${projectName}/${encodedTitle}?body=${bodyContent}`;
+
+            document.getElementById('status').textContent = `"${pageTitle}" をScrapboxに送信中...`;
+
+            // Scrapboxにリダイレクト
+            window.location.href = scrapboxUrl;
         }
-
-        const scrapboxUrl = `https://scrapbox.io/${projectName}/${encodedTitle}?body=${bodyContent}`;
-
-        document.getElementById('status').textContent = `"${pageTitle}" をScrapboxに送信中...`;
-
-        // Scrapboxにリダイレクト
-        window.location.href = scrapboxUrl;
+    } catch (error) {
+        console.error('共有データ処理エラー:', error);
+        const statusElement = document.getElementById('status');
+        if (statusElement) {
+            statusElement.textContent = `エラーが発生しました: ${error.message}`;
+            statusElement.style.backgroundColor = '#ffebee';
+        }
     }
 });
